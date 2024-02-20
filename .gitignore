@@ -1,0 +1,5 @@
+.git
+.vscode
+build**
+test_data**
+3rdparty**
