@@ -73,11 +73,11 @@ void test_start() {
 
 	double L = 5;
 	double dmax = 2;
-	double max_step = 2;
+	double max_step = 0.5;
 	double min_step = 0.4;
 	double R = 1.5;
 
-	const std::vector<double> steps = small_to_big(L, dmax, max_step, min_step, R);
+	const std::vector<double> steps = dA_to_dM_to_dB(L, dmax, max_step, min_step, R);
 
 
 	double sum = 0;
@@ -238,6 +238,12 @@ std::vector<double> dA_to_dM_to_dB(double L, double dmax, double dA, double dB, 
 
 	std::vector<double> steps;
 
+	double tol = 1e-6;
+
+	if (Abs(1 - R) <= tol) {
+		return steps;
+	}
+
 	int NA = Floor(Abs(1 + (log(dmax / dA) / log(R))));
 	double LA = dA * (1 - Pow(R, NA)) / (1 - R);
 
@@ -257,25 +263,41 @@ std::vector<double> dA_to_dM_to_dB(double L, double dmax, double dA, double dB, 
 		R = Min(R, (max_step - min_step) / L + 1);
 		std::cout << "R : " << R << std::endl;
 
-		NA = Floor(Abs((log(max_step / min_step) / log(R))));
-		LA = min_step * (1 - Pow(R, NA)) / (1 - R);
-		std::cout << "NA : " << NA << std::endl;
-		std::cout << "LA : " << LA << std::endl;
 
-		double diff = (L - LA) / NA;
+		if (Abs(1 - R) <= tol) {
+			int N = L / min_step;
+			double diff = L - N * min_step;
 
-		std::cout << "diff : " << diff << std::endl;
-
-		for (int i = 0; i < NA; i++) {
-			double step = min_step * Pow(R, i);
-			step += diff;
-
-			steps.push_back(step);
+			for (int i = 0; i < N; i++) {
+				double step = min_step;
+				step += diff / N;
+				steps.push_back(step);
+			}
 
 		}
-		if (dA > dB) {
-			std::reverse(steps.begin(), steps.end());
+		else {
+
+			NA = Floor(Abs((log(max_step / min_step) / log(R))));
+			LA = min_step * (1 - Pow(R, NA)) / (1 - R);
+			std::cout << "NA : " << NA << std::endl;
+			std::cout << "LA : " << LA << std::endl;
+
+			double diff = (L - LA) / NA;
+
+			std::cout << "diff : " << diff << std::endl;
+
+			for (int i = 0; i < NA; i++) {
+				double step = min_step * Pow(R, i);
+				step += diff;
+
+				steps.push_back(step);
+
+			}
+			if (dA > dB) {
+				std::reverse(steps.begin(), steps.end());
+			}
 		}
+
 	}
 	else {
 
