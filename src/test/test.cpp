@@ -74,7 +74,7 @@ void test_start() {
 	double L = 5;
 	double dmax = 2;
 	double max_step = 2;
-	double min_step = 0.05;
+	double min_step = 0.4;
 	double R = 1.5;
 
 	const std::vector<double> steps = small_to_big(L, dmax, max_step, min_step, R);
@@ -96,6 +96,11 @@ std::vector<double> small_to_big(double L, double dmax, double max_step, double 
 
 
 	std::vector<double> steps;
+	double tol = 1e-6;
+
+	if (Abs(1 - R) <= tol) {
+		return steps;
+	}
 
 	std::cout << "dmax : " << dmax << std::endl;
 	std::cout << "min_step : " << min_step << std::endl;
@@ -161,41 +166,56 @@ std::vector<double> small_to_big(double L, double dmax, double max_step, double 
 		R = Min(R, (max_step - min_step) / L + 1);
 		std::cout << "R : " << R << std::endl;
 
-		NA = Floor(Abs((log(max_step / min_step) / log(R))));
-		LA = min_step * (1 - Pow(R, NA)) / (1 - R);
-		std::cout << "NA : " << NA << std::endl;
-		std::cout << "LA : " << LA << std::endl;
+		if (Abs(1 - R) <= tol) {
+			int N = L / min_step;
+			double diff = L - N * min_step;
 
-		double diff = (L - LA);
-
-
-		if (diff >= min_step) {
-
-			bool add_diff = true;
-
-			for (int i = 0; i < NA; i++) {
-				double step = min_step * Pow(R, i);
+			for (int i = 0; i < N; i++) {
+				double step = min_step;
+				step += diff / N;
 				steps.push_back(step);
-
-				if (((diff / step) <= R) && add_diff) {
-					steps.push_back(diff);
-					add_diff = false;
-				}
-
 			}
 
 		}
 		else {
-			diff = diff / NA;
 
-			for (int i = 0; i < NA; i++) {
-				double step = min_step * Pow(R, i);
-				step += diff;
+			NA = Floor(Abs((log(max_step / min_step) / log(R))));
+			LA = min_step * (1 - Pow(R, NA)) / (1 - R);
+			std::cout << "NA : " << NA << std::endl;
+			std::cout << "LA : " << LA << std::endl;
 
-				steps.push_back(step);
+			double diff = (L - LA);
+
+
+			if (diff >= min_step) {
+
+				bool add_diff = true;
+
+				for (int i = 0; i < NA; i++) {
+					double step = min_step * Pow(R, i);
+					steps.push_back(step);
+
+					if (((diff / step) <= R) && add_diff) {
+						steps.push_back(diff);
+						add_diff = false;
+					}
+
+				}
 
 			}
+			else {
+				diff = diff / NA;
+
+				for (int i = 0; i < NA; i++) {
+					double step = min_step * Pow(R, i);
+					step += diff;
+
+					steps.push_back(step);
+
+				}
+			}
 		}
+
 		
 
 	}
@@ -204,6 +224,14 @@ std::vector<double> small_to_big(double L, double dmax, double max_step, double 
 
 	return steps;
 
+}
+
+std::vector<double> avg_to_avg(double L, double step) {
+	std::vector<double> steps;
+
+
+
+	return steps;
 }
 
 std::vector<double> dA_to_dM_to_dB(double L, double dmax, double dA, double dB, double R) {

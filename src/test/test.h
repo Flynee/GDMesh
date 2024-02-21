@@ -7,6 +7,7 @@ void test_start();
 
 
 std::vector<double> small_to_big(double L, double dmax, double max_step, double min_step, double R);
+std::vector<double> avg_to_avg(double L, double step);
 std::vector<double> dA_to_dM_to_dB(double L, double dmax, double dA, double dB, double R);
 
 // draw mesh
