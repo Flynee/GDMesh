@@ -48,6 +48,11 @@
 #include <Geom_Line.hxx>
 #include <Geom_Surface.hxx>
 #include <BRep_Tool.hxx>
+#include <BRepExtrema_DistShapeShape.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
+#include <IntCurvesFace_ShapeIntersector.hxx>
+
+#include <BRepTopAdaptor_FClass2d.hxx>
 
 
 #include <chrono>
@@ -64,6 +69,7 @@
 #include <iostream>
 #include <cmath>
 #include <vector>
+#include <omp.h>
 
 
 
@@ -71,13 +77,13 @@
 void test_start() {
 	std::cout << "test start..." << std::endl;
 
-	double L = 5;
+	/*double L = 1;
 	double dmax = 2;
 	double max_step = 0.5;
-	double min_step = 0.4;
+	double min_step = 0.5;
 	double R = 1.5;
 
-	const std::vector<double> steps = dA_to_dM_to_dB(L, dmax, max_step, min_step, R);
+	const std::vector<double> steps = small_to_big(L, dmax, max_step, min_step, R);
 
 
 	double sum = 0;
@@ -88,8 +94,24 @@ void test_start() {
 
 	}
 
-	std::cout << "sum = " << sum << std::endl;
+	std::cout << "sum = " << sum << std::endl;*/
 
+	// 开始计时
+	auto start = std::chrono::high_resolution_clock::now();
+
+	#pragma omp parallel for
+	for (int i = 0; i <10 * 10000; i++) {
+
+		occ_ray3();
+
+	}
+
+	// 结束计时
+	auto finish = std::chrono::high_resolution_clock::now();
+
+
+	std::chrono::duration<double> elapsed = finish - start;
+	std::cout << "执行时间: " << elapsed.count() << " 秒" << std::endl;
 }
 
 std::vector<double> small_to_big(double L, double dmax, double max_step, double min_step, double R) {
@@ -185,6 +207,7 @@ std::vector<double> small_to_big(double L, double dmax, double max_step, double 
 			std::cout << "LA : " << LA << std::endl;
 
 			double diff = (L - LA);
+			std::cout << "diff : " << diff << std::endl;
 
 
 			if (diff >= min_step) {
@@ -1505,7 +1528,7 @@ void occ_ray() {
 	TopoDS_Shape boxShape = box.Shape();
 
 	// 创建一条射线
-	Handle(Geom_Curve) ray = new Geom_Line(gp_Pnt(5.0, 5.0, 5.0), gp_Dir(.0, .0, 9.0));
+	Handle(Geom_Curve) ray = new Geom_Line(gp_Pnt(-5.0, 5.0, 5.0), gp_Dir(.0, 1.0, .0));
 	// 创建一个曲线和曲面的交点计算器
 	GeomAPI_IntCS intersector;
 
@@ -1527,16 +1550,107 @@ void occ_ray() {
 				gp_Pnt pnt = intersector.Point(i); // 获取交点的坐标
 				Standard_Real u, v, w;
 				intersector.Parameters(i, u, v, w); // 获取交点在曲线和曲面上的参数
-				std::cout << "Intersection point " << i << ": " << pnt.X() << ", " << pnt.Y() << ", " << pnt.Z() << std::endl; // 打印交点的信息
+
+
+				
+				// 使用BRepTopAdaptor_FClass2d来判断点是否在面内
+				BRepTopAdaptor_FClass2d pointClassifier(face, Precision::Confusion());
+				gp_Pnt2d pnt2d(u, v);
+				TopAbs_State pointPosition = pointClassifier.Perform(pnt2d);
+
+				if (pointPosition == TopAbs_IN || pointPosition == TopAbs_ON) {
+					// 交点在面内或边界上
+					//std::cout << "Intersection point " << i << ": " << pnt.X() << ", " << pnt.Y() << ", " << pnt.Z() << std::endl; // 打印交点的信息
+				}
+				else {
+					// 交点在面外
+					//std::cout << "Intersection point " << i << " is outside the face." << std::endl;
+				}
+
+
+
 			}
 		}
 		else // 如果计算失败或者没有交点
 		{
-			std::cout << "No intersection found." << std::endl; // 打印提示信息
+			//std::cout << "No intersection found." << std::endl; // 打印提示信息
 		}
 
 
 		// 对几何曲面进行一些操作
 		exp.Next(); // 移动到下一个面
 	}
+}
+
+
+void occ_ray2() {
+
+
+	// 创建一个盒子形状
+	BRepPrimAPI_MakeBox box(10.0, 10.0, 10.0);
+	TopoDS_Shape boxShape = box.Shape();
+
+	TopoDS_Edge rayEdge = BRepBuilderAPI_MakeEdge(gp_Lin(gp_Pnt(-5.0, 5.0, 5.0), gp_Dir(1.0, .0, .0)));
+
+	TopExp_Explorer exp(boxShape, TopAbs_FACE); // 创建一个拓扑遍历器，指定遍历的类型为面
+	while (exp.More()) // 遍历 shell 中的所有面
+	{
+		// 创建BRepExtrema_DistShapeShape对象并执行计算
+		BRepExtrema_DistShapeShape distCalc(TopoDS::Face(exp.Current()), rayEdge);
+		distCalc.Perform();
+
+		if (distCalc.IsDone() && distCalc.Value() < Precision::Confusion()) {
+			// 如果最小距离小于容差，则认为射线与面相交
+			for (Standard_Integer i = 1; i <= distCalc.NbSolution(); i++) {
+				gp_Pnt pnt = distCalc.PointOnShape1(i);
+				// 处理交点...
+
+				//std::cout << "Intersection point " << i << ": " << pnt.X() << ", " << pnt.Y() << ", " << pnt.Z() << std::endl; // 打印交点的信息
+
+			}
+		}
+		else {
+			// 没有交点或计算失败
+		}
+
+
+		exp.Next();
+	}
+	
+
+}
+
+
+void occ_ray3() {
+
+
+	// 创建一个盒子形状
+	BRepPrimAPI_MakeBox box(10.0, 10.0, 10.0);
+	TopoDS_Shape boxShape = box.Shape();
+
+	gp_Lin ray(gp_Pnt(-5.0, 5.0, 5.0), gp_Dir(1.0, .0, .0));
+
+	// 创建IntCurvesFace_ShapeIntersector对象
+	IntCurvesFace_ShapeIntersector intersector;
+	intersector.Load(boxShape, Precision::Confusion());
+
+	// 执行交点计算
+	intersector.Perform(ray, -RealLast(), RealLast());
+
+	// 检查是否有交点
+	if (intersector.IsDone() && intersector.NbPnt() > 0) {
+		for (int i = 1; i <= intersector.NbPnt(); ++i) {
+			// 获取交点
+			gp_Pnt pnt = intersector.Pnt(i);
+
+			// 处理交点...
+			//std::cout << "Intersection point " << i << ": " << pnt.X() << ", " << pnt.Y() << ", " << pnt.Z() << std::endl; // 打印交点的信息
+
+		}
+	}
+	else {
+		// 没有交点或计算失败
+	}
+
+
 }

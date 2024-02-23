@@ -39,6 +39,10 @@ void fake_uniform_hex();
 // occ ray
 void occ_ray();
 
+void occ_ray2();
+
+void occ_ray3();
+
 
 // dA = dB = dmax
 void dA_dB_dmax();
