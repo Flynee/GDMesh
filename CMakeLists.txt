@@ -77,7 +77,10 @@ if(MSVC)
     set(EMBREE_INCLUDE_DIR ${ROOT_3RDPARTY}/vc14/embree/include)
     # embree lib
     file(GLOB_RECURSE EMBREE_LIB_FILES ${ROOT_3RDPARTY}/vc14/embree/lib/*.lib)
-
+    # OSG include
+    set(OSG_INCLUDE_DIR ${ROOT_3RDPARTY}/vc14/osg/include)
+    # OSG lib
+    file(GLOB_RECURSE OSG_LIB_FILES ${ROOT_3RDPARTY}/vc14/osg/lib/*.lib)
 
 elseif(CMAKE_COMPILER_IS_GNUCXX)
     set(COMPILER gcc)
@@ -137,6 +140,13 @@ if(EMBREE_LIB_FILES)
     target_link_libraries(GDMesh PUBLIC ${EMBREE_LIB_FILES})
 endif()
 
+if(OSG_INCLUDE_DIR)
+    target_include_directories(GDMesh PUBLIC ${OSG_INCLUDE_DIR})
+endif()
+
+if(OSG_LIB_FILES)
+    target_link_libraries(GDMesh PUBLIC ${OSG_LIB_FILES})
+endif()
 
 # cmake debug mode
 set(CMAKE_FIND_DEBUG_MODE 1)
@@ -206,6 +216,18 @@ if(CMAKE_FIND_DEBUG_MODE)
         message("$$$$$$$$$ find EMBREE_LIB_FILES")
     else()
         message("$$$$$$$$$ EMBREE_LIB_FILES not found")
+    endif()
+
+    if(OSG_INCLUDE_DIR)
+        message("$$$$$$$$$ find OSG_INCLUDE_DIR")
+    else()
+        message("$$$$$$$$$ OSG_INCLUDE_DIR not found")
+    endif()
+
+    if(OSG_LIB_FILES)
+        message("$$$$$$$$$ find OSG_LIB_FILES")
+    else()
+        message("$$$$$$$$$ OSG_LIB_FILES not found")
     endif()
 
 endif()

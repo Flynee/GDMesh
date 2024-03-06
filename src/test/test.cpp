@@ -53,11 +53,13 @@
 #include <IntCurvesFace_ShapeIntersector.hxx>
 
 #include <BRepTopAdaptor_FClass2d.hxx>
-
+#include <TopExp.hxx>
 
 #include <chrono>
 #include <array>
 
+#include <iostream>
+#include <chrono>
 
 #include <embree4/rtcore.h>
 #include <embree4/rtcore_ray.h>
@@ -96,22 +98,24 @@ void test_start() {
 
 	std::cout << "sum = " << sum << std::endl;*/
 
+	//long long  perform_time = 0;
 	// 开始计时
-	auto start = std::chrono::high_resolution_clock::now();
+	//auto start = std::chrono::high_resolution_clock::now();
 
-	#pragma omp parallel for
-	for (int i = 0; i <10 * 10000; i++) {
+	//#pragma omp parallel for  num_threads(4) 
+	//for (int i = 0; i <10 * 10000; i++) {
 
-		occ_ray3();
+		occ_ray();
 
-	}
+	//}
 
-	// 结束计时
-	auto finish = std::chrono::high_resolution_clock::now();
+	//// 结束计时
+	//auto end = std::chrono::high_resolution_clock::now();
+	//auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-
-	std::chrono::duration<double> elapsed = finish - start;
-	std::cout << "执行时间: " << elapsed.count() << " 秒" << std::endl;
+	//
+	//std::cout << "perform_time: " << perform_time * 1e-6 << " ms" << std::endl;
+	//std::cout << "all_time: " << duration.count() << " ms" << std::endl;
 }
 
 std::vector<double> small_to_big(double L, double dmax, double max_step, double min_step, double R) {
@@ -1521,43 +1525,68 @@ void fake_uniform_hex() {
 
 
 void occ_ray() {
-
-
 	// 创建一个盒子形状
 	BRepPrimAPI_MakeBox box(10.0, 10.0, 10.0);
 	TopoDS_Shape boxShape = box.Shape();
 
-	// 创建一条射线
-	Handle(Geom_Curve) ray = new Geom_Line(gp_Pnt(-5.0, 5.0, 5.0), gp_Dir(.0, 1.0, .0));
-	// 创建一个曲线和曲面的交点计算器
-	GeomAPI_IntCS intersector;
+	long long surface_time = 0;
+	long long perform_time = 0;
+	long long domain_time = 0;
 
-	// 假设已经定义了一个 TopoDS_Shell 对象 shell
-	TopExp_Explorer exp(boxShape, TopAbs_FACE); // 创建一个拓扑遍历器，指定遍历的类型为面
-	while (exp.More()) // 遍历 shell 中的所有面
+	// 创建一条射线
+	auto start = std::chrono::high_resolution_clock::now();
+
+	Handle(Geom_Curve) ray = new Geom_Line(gp_Pnt(-5.0, 5.0, 5.0), gp_Dir(.0, 1.0, .0));
+	auto end1 = std::chrono::high_resolution_clock::now();
+
+	TopTools_IndexedMapOfShape mapOfFaces;
+	
+	TopExp::MapShapes(boxShape, TopAbs_FACE, mapOfFaces);
+	auto end2 = std::chrono::high_resolution_clock::now();
+
+	
+
+	//#pragma omp parallel for num_threads(2)
+	for (int i = 1; i <= mapOfFaces.Extent(); i++)
 	{
-		const TopoDS_Face& face = TopoDS::Face(exp.Current()); // 获取当前的面
+		auto start3 = std::chrono::high_resolution_clock::now();
+
+		GeomAPI_IntCS intersector;
+		const TopoDS_Face& face = TopoDS::Face(TopoDS::Face(mapOfFaces(i)));
 		const Handle(Geom_Surface)& surface = BRep_Tool::Surface(face); // 将面转为几何曲面
+		auto end3 = std::chrono::high_resolution_clock::now();
+		auto duration3 = std::chrono::duration_cast<std::chrono::nanoseconds>(end3 - start3);
+		surface_time += duration3.count();
+
+
+		auto start4 = std::chrono::high_resolution_clock::now();
+
 		intersector.Perform(ray, surface); // 指定曲线和曲面，进行求交计算
 
-
-
+		
 		// 遍历交点
 		if (intersector.IsDone() && intersector.NbPoints() > 0) // 如果计算成功并且有交点
 		{
+			auto end4 = std::chrono::high_resolution_clock::now();
+			auto duration4 = std::chrono::duration_cast<std::chrono::nanoseconds>(end4 - start4);
+			perform_time += duration4.count();
+
+			auto start5 = std::chrono::high_resolution_clock::now();
+
 			for (int i = 1; i <= intersector.NbPoints(); i++) // 遍历每个交点
 			{
 				gp_Pnt pnt = intersector.Point(i); // 获取交点的坐标
 				Standard_Real u, v, w;
 				intersector.Parameters(i, u, v, w); // 获取交点在曲线和曲面上的参数
 
-
 				
 				// 使用BRepTopAdaptor_FClass2d来判断点是否在面内
-				BRepTopAdaptor_FClass2d pointClassifier(face, Precision::Confusion());
+				BRepTopAdaptor_FClass2d pointClassifier(face, 1e-5);
 				gp_Pnt2d pnt2d(u, v);
 				TopAbs_State pointPosition = pointClassifier.Perform(pnt2d);
 
+				
+				
 				if (pointPosition == TopAbs_IN || pointPosition == TopAbs_ON) {
 					// 交点在面内或边界上
 					//std::cout << "Intersection point " << i << ": " << pnt.X() << ", " << pnt.Y() << ", " << pnt.Z() << std::endl; // 打印交点的信息
@@ -1570,16 +1599,31 @@ void occ_ray() {
 
 
 			}
+
+			auto end5 = std::chrono::high_resolution_clock::now();
+			auto duration5 = std::chrono::duration_cast<std::chrono::nanoseconds>(end5 - start5);
+			domain_time += duration5.count();
 		}
 		else // 如果计算失败或者没有交点
 		{
 			//std::cout << "No intersection found." << std::endl; // 打印提示信息
 		}
 
+		
 
-		// 对几何曲面进行一些操作
-		exp.Next(); // 移动到下一个面
 	}
+
+	auto end = std::chrono::high_resolution_clock::now();
+	auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+	auto duration1 = std::chrono::duration_cast<std::chrono::nanoseconds>(end1 - start);
+	auto duration2 = std::chrono::duration_cast<std::chrono::nanoseconds>(end2 - start);
+
+	std::cout << "all_time: " << duration.count() << " ns  " << std::endl;
+	std::cout << "ray_time: " << duration1.count() << " ns  " << (duration1.count() * 100.0  / duration.count()) << "%" << std::endl;
+	std::cout << "MapShapes_time: " << duration2.count() << " ns  " << (duration2.count() * 100.0 / duration.count()) << "%" << std::endl;
+	std::cout << "surface_time: " << surface_time << " ns  " << (surface_time * 100.0 / duration.count()) << "%" << std::endl;
+	std::cout << "perform_time: " << perform_time << " ns  " << (perform_time * 100.0 / duration.count()) << "%" << std::endl;
+	std::cout << "domain_time: " << domain_time << " ns  " << (domain_time * 100.0 / duration.count()) << "%" << std::endl;
 }
 
 
