@@ -10,9 +10,13 @@
 #include <fstream>
 #include <filesystem>
 #include <OSD_OpenFile.hxx>
+#include "test/test_gmsh.h"
+
 
 int main(int argc, char** argv) {
     test_start();
+
+	//auto_mesh_surface();
    /* std::string data_dir = "D:/work/myocc-dev2/log";
     HW_PGD::gen_fdtd_prepare_data(data_dir);*/
 
