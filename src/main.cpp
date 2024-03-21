@@ -11,10 +11,12 @@
 #include <filesystem>
 #include <OSD_OpenFile.hxx>
 #include "test/test_gmsh.h"
+#include "test/test_gtest.h"
 
 
 int main(int argc, char** argv) {
-    test_start();
+	test_google_start(argc, argv);
+    //test_start();
 
 	//auto_mesh_surface();
    /* std::string data_dir = "D:/work/myocc-dev2/log";

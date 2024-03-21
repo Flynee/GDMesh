@@ -50,9 +50,7 @@ add_all_subdirectories(${CMAKE_CURRENT_SOURCE_DIR})
 
 # Compiler
 message("$$$$$$$$$ Compiler: ${CMAKE_CXX_COMPILER_ID}")
-if(CMAKE_COMPILER_IS_GNUCXX)
-    set(ROOT_3RDPARTY ${CMAKE_SOURCE_DIR}/3rdparty/MinGW_gcc-13.2.0) 
-endif()
+
 
 # occ include
 set(OCC_INCLUDE_DIR ${ROOT_3RDPARTY}/occ-7.6.3/include)
@@ -84,7 +82,10 @@ file(GLOB_RECURSE GMSH_LIB_FILES ${ROOT_3RDPARTY}/gmsh-4.10.5/lib/*.lib)
 set(OSG_INCLUDE_DIR ${ROOT_3RDPARTY}/osg-3.6.5/include)
 # OSG lib
 file(GLOB_RECURSE OSG_LIB_FILES ${ROOT_3RDPARTY}/osg-3.6.5/lib/*.lib)
-
+# googletest include
+set(GTEST_INCLUDE_DIR ${ROOT_3RDPARTY}/googletest-1.12.1/include)
+# googletest lib
+file(GLOB_RECURSE GTEST_LIB_FILES ${ROOT_3RDPARTY}/googletest-1.12.1/lib/*.lib)
 
 message("$$$$$$$$$ CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
 # group source files
@@ -99,110 +100,85 @@ endforeach()
 if(OCC_INCLUDE_DIR AND OCC_LIB_FILES)
     include_directories(${OCC_INCLUDE_DIR})
     link_libraries(${OCC_LIB_FILES})
+    message("#####  OCC is OK ! ########")
+else()
+    message("#####  OCC was not found ! ########")
 endif()
 
 
 if(BOOST_INCLUDE_DIR AND BOOST_LIB_FILES)
     include_directories(${BOOST_INCLUDE_DIR})
     link_libraries(${BOOST_LIB_FILES})
+    message("#####  BOOST is OK ! ########")
+else()
+    message("#####  BOOST was not found ! ########")
 endif()
 
 if(EIGEN_INCLIUDE_DIR)
     include_directories(${EIGEN_INCLIUDE_DIR})
+    message("#####  EIGEN is OK ! ########")
+else()
+    message("#####  EIGEN was not found ! ########")
 endif()
 
 if(IGL_INCLUDE_DIR)
     include_directories(${IGL_INCLUDE_DIR})
+    message("#####  IGL is OK ! ########")
+else()
+    message("#####  IGL was not found ! ########")
 endif()
 
 if(GLFW_INCLUDE_DIR AND GLFW_LIB_FILES)
     include_directories(${GLFW_INCLUDE_DIR})
     link_libraries(${GLFW_LIB_FILES})
+    message("#####  GLFW is OK ! ########")
+else()
+    message("#####  GLFW was not found ! ########")
 endif()
 
 
 if(GLAD_INCLUDE_DIR)
     include_directories(${GLAD_INCLUDE_DIR})
+    message("#####  GLAD is OK ! ########")
+else()
+    message("#####  GLAD was not found ! ########")
 endif()
 
 if(EMBREE_INCLUDE_DIR AND EMBREE_LIB_FILES)
     include_directories(${EMBREE_INCLUDE_DIR})
     link_libraries(${EMBREE_LIB_FILES})
+    message("#####  EMBREE is OK ! ########")
+else()
+    message("#####  EMBREE was not found ! ########")
 endif()
 
 
 if(OSG_INCLUDE_DIR AND OSG_LIB_FILES)
     include_directories(${OSG_INCLUDE_DIR})
     link_libraries(${OSG_LIB_FILES})
+    message("#####  OSG is OK ! ########")
+else()
+    message("#####  OSG was not found ! ########")
 endif()
 
 
 if(GMSH_INCLUDE_DIR AND GMSH_LIB_FILES)
     include_directories(${GMSH_INCLUDE_DIR})
     link_libraries(${GMSH_LIB_FILES})
+    message("#####  GMSH is OK ! ########")
+else()
+    message("#####  GMSH was not found ! ########")
+endif()
+
+if(GTEST_INCLUDE_DIR AND GTEST_LIB_FILES)
+    include_directories(${GTEST_INCLUDE_DIR})
+    link_libraries(${GTEST_LIB_FILES})
+    message("#####  GTEST is OK ! ########")
+else()
+    message("#####  GTEST was not found ! ########")
 endif()
 
 
 
 add_executable(${PROJECT_NAME} ${ALL_CPP_FILES} ${ALL_H_FILES})
 target_compile_options(${PROJECT_NAME} PRIVATE "/bigobj" "/wd4430")
-
-# cmake debug mode
-set(CMAKE_FIND_DEBUG_MODE 1)
-# debug message
-if(CMAKE_FIND_DEBUG_MODE)
-    if(OCC_INCLUDE_DIR AND OCC_LIB_FILES)
-        message("=====Info: OCC is OK!========")
-    else()
-        message("=====Warning: OCC not found!========")
-    endif()
-
-    if(BOOST_INCLUDE_DIR AND BOOST_LIB_FILES)
-        message("=====Info: BOOST is OK!========")
-    else()
-        message("=====Warning: BOOST not found!========")
-    endif()
-
-    if(EIGEN_INCLIUDE_DIR)
-        message("=====Info: EIGEN is OK!========")
-    else()
-        message("=====Warning: EIGEN not found!========")
-    endif()
-
-    if(IGL_INCLUDE_DIR)
-        message("=====Info: IGL is OK!========")
-    else()
-        message("=====Warning: IGL not found!========")
-    endif()
-
-    if(GLFW_INCLUDE_DIR AND GLFW_LIB_FILES)
-        message("=====Info: GLFW is OK!========")
-    else()
-        message("=====Warning: GLFW not found!========")
-    endif()
-
-    if(GLAD_INCLUDE_DIR)
-        message("=====Info: GLAD is OK!========")
-    else()
-        message("=====Warning: GLAD not found!========")
-    endif()
-
-    if(EMBREE_INCLUDE_DIR AND EMBREE_LIB_FILES)
-        message("=====Info: EMBREE is OK!========")
-    else()
-        message("=====Warning: EMBREE not found!========")
-    endif()
-
-    if(OSG_INCLUDE_DIR AND OSG_LIB_FILES)
-        message("=====Info: OSG is OK!========")
-    else()
-        message("=====Warning: OSG not found!========")
-    endif()
-
-    if(GMSH_INCLUDE_DIR AND GMSH_LIB_FILES)
-        message("=====Info: GMSH is OK!========")
-    else()
-        message("=====Warning: GMSH not found!========")
-    endif()
-    
-endif()
